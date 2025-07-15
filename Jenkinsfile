@@ -12,7 +12,8 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', 'https://github.com/git-srinivas05/java-calculator-app.git'
+                git url: 'https://github.com/git-srinivas05/java-calculator-app.git', branch: 'main'
+
             }
         }
 
