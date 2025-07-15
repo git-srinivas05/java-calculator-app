@@ -54,17 +54,24 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
-            steps {
+     stage('Deploy to Kubernetes') {
+        steps {
+            withCredentials([[
+                $class: 'AmazonWebServicesCredentialsBinding',
+                credentialsId: 'AWS-credentials'
+        ]])     {
                 sh '''
                     echo "🚀 Deploying to Kubernetes..."
+                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                    export AWS_REGION=us-east-1
+
                     kubectl apply -f k8s/deployment.yaml
                     kubectl apply -f k8s/service.yaml
-                '''
+            '''
             }
-        }
     }
-
+}
     post {
         success {
             echo "✅ Deployment completed successfully!"
