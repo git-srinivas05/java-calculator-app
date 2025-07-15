@@ -13,7 +13,6 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 git url: 'https://github.com/git-srinivas05/java-calculator-app.git', branch: 'main'
-
             }
         }
 
@@ -31,11 +30,9 @@ pipeline {
 
         stage('Authenticate with AWS ECR') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'AWS-credentails'
-                ]]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS-credentails']]) {
                     sh '''
+                        echo "🔐 Logging into AWS ECR..."
                         aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
                     '''
                 }
@@ -51,6 +48,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
+                    echo "🚀 Deploying to Kubernetes..."
                     kubectl apply -f k8s/deployment.yaml
                     kubectl apply -f k8s/service.yaml
                 '''
