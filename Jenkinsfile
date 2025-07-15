@@ -61,7 +61,7 @@ pipeline {
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'AWS-credentials'
+                    credentialsId: 'AWS-ID'
                 ]]) {
                     sh '''
                         echo "🚀 Deploying to Kubernetes..."
