@@ -30,7 +30,10 @@ pipeline {
 
         stage('Authenticate with AWS ECR') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS-ID']]) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'AWS-credentials'
+                ]]) {
                     sh '''
                         echo "🔐 Logging into AWS ECR..."
 
@@ -54,24 +57,30 @@ pipeline {
             }
         }
 
-     stage('Deploy to Kubernetes') {
-        steps {
-            withCredentials([[
-                $class: 'AmazonWebServicesCredentialsBinding',
-                credentialsId: 'AWS-credentials'
-        ]])     {
-                sh '''
-                    echo "🚀 Deploying to Kubernetes..."
-                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                    export AWS_REGION=us-east-1
+        stage('Deploy to Kubernetes') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'AWS-credentials'
+                ]]) {
+                    sh '''
+                        echo "🚀 Deploying to Kubernetes..."
 
-                    kubectl apply -f k8s/deployment.yaml
-                    kubectl apply -f k8s/service.yaml
-            '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        export AWS_REGION=$AWS_REGION
+
+                        # update kubeconfig just to be safe
+                        aws eks update-kubeconfig --region $AWS_REGION --name Java-EKS-cluster
+
+                        kubectl apply -f k8s/deployment.yaml
+                        kubectl apply -f k8s/service.yaml
+                    '''
+                }
             }
+        }
     }
-}
+
     post {
         success {
             echo "✅ Deployment completed successfully!"
