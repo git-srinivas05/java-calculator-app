@@ -2,18 +2,17 @@ pipeline {
     agent any
 
     environment {
-        ECR_REPO = '211218518678.dkr.ecr.us-east-1.amazonaws.com/java-app'
-        IMAGE_TAG = "latest"
         AWS_REGION = "us-east-1"
-    }
-     triggers {
-        githubPush() // This enables GitHub webhook trigger
+        IMAGE_NAME = "java-app"
+        ECR_REGISTRY = "211218518678.dkr.ecr.us-east-1.amazonaws.com"
+        ECR_REPO_URI = "${ECR_REGISTRY}/${IMAGE_NAME}"
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/git-srinivas05/java-calculator-app.git'
+                git 'https://github.com/git-srinivas05/java-calculator-app.git'
             }
         }
 
@@ -25,38 +24,45 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t $ECR_REPO:$IMAGE_TAG .'
+                sh 'docker build -t $ECR_REPO_URI:latest .'
             }
         }
 
-        stage('Authenticate with ECR') {
+        stage('Authenticate with AWS ECR') {
             steps {
-                sh 'aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO'
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'AWS-credentails'
+                ]]) {
+                    sh '''
+                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+                    '''
+                }
             }
         }
 
-        stage('Push to ECR') {
+        stage('Push Docker Image to ECR') {
             steps {
-                sh 'docker push $ECR_REPO:$IMAGE_TAG'
+                sh 'docker push $ECR_REPO_URI:latest'
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl apply -f k8s/namespace.yaml'
-                sh 'kubectl apply -f k8s/deployment.yaml'
-                sh 'kubectl apply -f k8s/service.yaml'
+                sh '''
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
+                '''
             }
         }
     }
 
     post {
         success {
-            echo "🚀 Deployment successful!"
+            echo "✅ Deployment completed successfully!"
         }
         failure {
-            echo "❌ Build or Deployment failed!"
+            echo "❌ Pipeline failed. Please check the logs."
         }
     }
 }
-
