@@ -33,10 +33,16 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS-credentials']]) {
                     sh '''
                         echo "🔐 Logging into AWS ECR..."
-                        which aws
-                        aws --version
-                        aws sts get-caller-identity
-                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+                        echo "🔎 Checking aws CLI installation..."
+                        which aws || echo "❌ aws CLI not found"
+                        aws --version || echo "❌ aws version check failed"
+
+                        echo "🔍 Verifying AWS identity..."
+                        aws sts get-caller-identity || echo "❌ Failed to get caller identity"
+
+                        echo "🔑 Attempting ECR login..."
+                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY || echo "❌ Docker login to ECR failed"
                     '''
                 }
             }
