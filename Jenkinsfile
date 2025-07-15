@@ -6,6 +6,9 @@ pipeline {
         IMAGE_TAG = "latest"
         AWS_REGION = "us-east-1"
     }
+     triggers {
+        githubPush() // This enables GitHub webhook trigger
+    }
 
     stages {
         stage('Checkout Code') {
